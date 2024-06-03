@@ -159,7 +159,7 @@ def fm_spin_model(strg):
 
     sx = sp.exp(I * k.dot(deltaX))
     sy = sp.exp(I * k.dot(deltaY))
-    sz = sp.exp(I * k.dot(deltaY))
+    sz = sp.exp(I * k.dot(deltaZ))
     tx = sp.exp(-I * k.dot(deltaX))
     ty = sp.exp(-I * k.dot(deltaY))
     tz = sp.exp(-I * k.dot(deltaZ))
@@ -214,6 +214,7 @@ def fm_spin_model(strg):
     # add_strg: add coupling strength
 
     HlswFourSub_add_strg = HlswFourSub_FM.subs([(J, strg[0]), (K, strg[1]), (Gamma, strg[2]), (gamma, strg[3]), (h, strg[4]), (a, 1)])
+    H_test = sp.matrices.dense.matrix2numpy(HlswFourSub_add_strg.subs([(k1,1),(k2,1)])).astype(complex)
     return HlswFourSub_add_strg
 
 def bdg(hlsw, kx, ky):
@@ -227,6 +228,9 @@ def bdg(hlsw, kx, ky):
     k2 = sp.Symbol("k2", real=True)
 
     H_pure_num = sp.matrices.dense.matrix2numpy(hlsw.subs([(k1, kx), (k2, ky)])).astype(complex)
+
+    H_test = H_pure_num-np.transpose(np.conjugate(H_pure_num))
+
     H_BdG = np.matmul(sigma_3, H_pure_num)
     eigval_k,eigvec_k = (LA.eig(H_BdG))
 
@@ -235,15 +239,15 @@ def bdg(hlsw, kx, ky):
     eigvec_k = eigvec_k[:, idx]
     return eigval_k, eigvec_k
 
-def band_high_sym(hlsw, strg):
-    eng_all = np.array([])
-    dk = 2 * np.pi / 20
+def band_high_sym(hlsw, strg, rsln):
+    eng_all = np.empty((0,4), float)
+    dk = 2 * np.pi / rsln
     fig, ax = spp(facecolor='0.95')
 
     # a = 1
     bb = 4 * np.pi / np.sqrt(3)
 
-    # X to K
+# X to K
     # step length and number of steps:
     n = bb / (2 * np.sqrt(3)) / dk
     k1_init = -np.sqrt(3) / 2 * bb
@@ -256,10 +260,10 @@ def band_high_sym(hlsw, strg):
     i = 0
     while i < n:
         eng, vec = bdg(hlsw,k1_init + i * dk, k2_init)
-        eng_all = np.append(eng_all, eng, axis=0)
+        eng_all = np.append(eng_all, [eng], axis=0)
         i += 1
 
-    # K to gamma
+# K to gamma
     # step length and number of steps:
     n = bb / np.sqrt(3) / dk
 
@@ -267,13 +271,13 @@ def band_high_sym(hlsw, strg):
     k2_init = 0
 
     # denote the high symmetry point
-    fig.gca().axvline(x=eng_all.size, color='b', linestyle='dashed')
-    x_ticks = np.append(x_ticks, [eng_all.size], axis=0)
+    fig.gca().axvline(x=eng_all.shape[0], color='b', linestyle='dashed')
+    x_ticks = np.append(x_ticks, [eng_all.shape[0]], axis=0)
 
     i = 0
     while i < n:
         eng, vec = bdg(hlsw,  k1_init + i * dk, k2_init)
-        eng_all = np.append(eng_all, eng, axis=0)
+        eng_all = np.append(eng_all, [eng], axis=0)
         i += 1
 
     # gamma to Y
@@ -284,13 +288,13 @@ def band_high_sym(hlsw, strg):
     k2_init = 0
 
     # denote the high symmetry point
-    fig.gca().axvline(x=eng_all.size, color='b', linestyle='dashed')
-    x_ticks = np.append(x_ticks, [eng_all.size], axis=0)
+    fig.gca().axvline(x=eng_all.shape[0], color='b', linestyle='dashed')
+    x_ticks = np.append(x_ticks, [eng_all.shape[0]], axis=0)
 
     i = 0
     while i < n:
         eng, vec = bdg(hlsw, k1_init, k2_init + i * dk)
-        eng_all = np.append(eng_all, eng, axis=0)
+        eng_all = np.append(eng_all, [eng], axis=0)
         i += 1
 
     # Y to gamma'
@@ -301,13 +305,13 @@ def band_high_sym(hlsw, strg):
     k2_init = bb / 2
 
     # denote the high symmetry point
-    fig.gca().axvline(x=eng_all.size, color='b', linestyle='dashed')
-    x_ticks = np.append(x_ticks, [eng_all.size], axis=0)
+    fig.gca().axvline(x=eng_all.shape[0], color='b', linestyle='dashed')
+    x_ticks = np.append(x_ticks, [eng_all.shape[0]], axis=0)
 
     i = 0
     while i < n:
         eng, vec = bdg(hlsw, k1_init + i * dk, k2_init)
-        eng_all = np.append(eng_all, eng, axis=0)
+        eng_all = np.append(eng_all, [eng], axis=0)
         i += 1
 
     # gamma' to M
@@ -318,13 +322,13 @@ def band_high_sym(hlsw, strg):
     k2_init = bb / 2
 
     # denote the high symmetry point
-    fig.gca().axvline(x=eng_all.size, color='b', linestyle='dashed')
-    x_ticks = np.append(x_ticks, [eng_all.size], axis=0)
+    fig.gca().axvline(x=eng_all.shape[0], color='b', linestyle='dashed')
+    x_ticks = np.append(x_ticks, [eng_all.shape[0]], axis=0)
 
     i = 0
     while i < n:
         eng, vec = bdg(hlsw, k1_init + i * dk * (-np.sqrt(3) / 2), k2_init + i * dk * (-1 / 2))
-        eng_all = np.append(eng_all, eng, axis=0)
+        eng_all = np.append(eng_all, [eng], axis=0)
         i += 1
 
     # M to gamma
@@ -335,20 +339,21 @@ def band_high_sym(hlsw, strg):
     k2_init = bb / 4
 
     # denote the high symmetry point
-    fig.gca().axvline(x=eng_all.size, color='b', linestyle='dashed')
-    x_ticks = np.append(x_ticks, [eng_all.size], axis=0)
+    fig.gca().axvline(x=eng_all.shape[0], color='b', linestyle='dashed')
+    x_ticks = np.append(x_ticks, [eng_all.shape[0]], axis=0)
 
     i = 0
     while i < n:
         eng, vec = bdg(hlsw, k1_init + i * dk * (-np.sqrt(3) / 2), k2_init + i * dk * (-1 / 2))
-        eng_all = np.append(eng_all, eng, axis=0)
+        eng_all = np.append(eng_all, [eng], axis=0)
         i += 1
 
     # denote the high symmetry point
-    fig.gca().axvline(x=eng_all.size - 1, color='b', linestyle='dashed')
-    x_ticks = np.append(x_ticks, [eng_all.size - 1], axis=0)
+    fig.gca().axvline(x=eng_all.shape[0] - 1, color='b', linestyle='dashed')
+    x_ticks = np.append(x_ticks, [eng_all.shape[0] - 1], axis=0)
 
-    x = np.linspace(0, eng_all.size, num=eng_all.size, endpoint=False, retstep=False, dtype=None, axis=0)
+    num = int(eng_all.size/4)
+    x = np.linspace(0, num, num, endpoint=False, retstep=False, dtype=None, axis=0)
 
     fig.gca().set_title("Band structure along high symmetry points")
     fig.gca().set_xlabel("k")
@@ -356,9 +361,13 @@ def band_high_sym(hlsw, strg):
     fig.gca().set_xticks(x_ticks)
     fig.gca().set_xticklabels(['X', 'K', '$\Gamma$', 'Y', "$\Gamma$'", 'M', '$\Gamma$'])
 
-    fig.gca().scatter(x, eng_all, color='k', s=1.5)
-    fig.gca().set_ybound(lower=None, upper=7)
-    fig.gca().text(0, 6, f"$[J,K,\Gamma,\Gamma ', h]$ = [{strg[0]}, {strg[1]}, {strg[2]}, {strg[3]}, {strg[4]}]",
+    eng_all = np.reshape(eng_all,(-1,4))
+    fig.gca().plot(x, eng_all[:,0], color='k')
+    fig.gca().plot(x, eng_all[:, 1], color='k')
+    fig.gca().plot(x, eng_all[:, 2], color='k')
+    fig.gca().plot(x, eng_all[:, 3], color='k')
+    fig.gca().set_ybound(lower=None, upper=eng_all.max()+5.5)
+    fig.gca().text(0, eng_all.max()+3, f"$[J,K,\Gamma,\Gamma ', h]$ = [{strg[0]}, {strg[1]}, {strg[2]}, {strg[3]}, {strg[4]}]",
                    fontsize=10, bbox={'facecolor': '0.8', 'pad': 2})
     fig.savefig('band.png')
 
@@ -449,7 +458,7 @@ def chern(hlsw, muu, nuu, rsln):
         kx_init = -(kyy + bb) / np.sqrt(3)
         rsln_x = 2*(kyy + bb) / np.sqrt(3)/dk
         j = 0
-        while j < rsln_x+1:
+        while j < rsln_x:
             kxx = kx_init + dk * j
 
             # sum over n=1~N
@@ -471,7 +480,7 @@ def chern(hlsw, muu, nuu, rsln):
         kx_init = -(bb-kyy) / np.sqrt(3)
         rsln_x = 2*(bb-kyy) /np.sqrt(3)/dk
         j = 0
-        while j < rsln_x+1:
+        while j < rsln_x:
             kxx = kx_init + dk * j
 
             # sum over n=1~N
@@ -519,6 +528,9 @@ def unnormalized_heat_conductivity(hlsw, muu, nuu, T, rsln):
     bb = 4*np.pi/np.sqrt(3)
     sum_k = np.array([0,0])
 
+    #of unit cells!
+    N = 0
+
     # dT = 0.1
     # T_init = 1.5
     # sum_k_varT = np.array([])
@@ -532,7 +544,7 @@ def unnormalized_heat_conductivity(hlsw, muu, nuu, T, rsln):
     while i < rsln_y:
         kyy = ky_init + dk * i
         kx_init = -(kyy + bb) / np.sqrt(3)
-        rsln_x = (kyy + bb) / dk
+        rsln_x = 2 * (kyy + bb) / np.sqrt(3) / dk
         j = 0
         while j < rsln_x:
             kxx = kx_init + dk * j
@@ -543,7 +555,7 @@ def unnormalized_heat_conductivity(hlsw, muu, nuu, T, rsln):
 
             # sum over n=1~N
             sum_k = sum_k + c2_nk*mat_omega_nk
-
+            N += 0
             j += 1
         i += 1
 
@@ -557,8 +569,8 @@ def unnormalized_heat_conductivity(hlsw, muu, nuu, T, rsln):
     i = 0
     while i < rsln_y:
         kyy = ky_init + dk * i
-        kx_init = (kyy - bb) / np.sqrt(3)
-        rsln_x = -(kyy - bb) / dk
+        kx_init = -(bb - kyy) / np.sqrt(3)
+        rsln_x = 2 * (bb - kyy) / np.sqrt(3) / dk
         j = 0
         while j < rsln_x:
             kxx = kx_init + dk * j
@@ -568,10 +580,10 @@ def unnormalized_heat_conductivity(hlsw, muu, nuu, T, rsln):
 
             # sum over n=1~N
             sum_k = sum_k + c2_nk * mat_omega_nk
-
+            N += 1
             j += 1
         i += 1
 
-    kappa = sum_k*T
-    return sum_k
+    kappa = -sum_k*T/N
+    return kappa, N
 
